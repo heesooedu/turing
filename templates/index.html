@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>튜링 테스트 게임</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <main class="container">
+    <h1>튜링 테스트 게임</h1>
+    <p>대화 후 상대가 사람인지 AI인지 판정해보세요.</p>
+
+    {% if round_open %}
+      <form action="/join" method="post" class="card">
+        <label for="name">이름</label>
+        <input id="name" name="name" placeholder="이름 입력" required />
+        <button type="submit">게임 시작</button>
+      </form>
+    {% else %}
+      <div class="card">
+        <strong>현재 라운드가 닫혀 있습니다.</strong>
+        <p>교사가 라운드를 열면 다시 접속해 주세요.</p>
+      </div>
+    {% endif %}
+
+    <p><a href="/teacher">교사용 대시보드</a></p>
+  </main>
+</body>
+</html>
