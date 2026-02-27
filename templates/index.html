@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>튜링 테스트 게임</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <main class="container">
+    <h1>튜링 테스트 게임</h1>
+    <p>학생-학생 / 학생-AI 두 가지 방식으로 매칭됩니다.</p>
+
+    {% if round_open %}
+      <form action="/join" method="post" class="card">
+        <label for="name">이름</label>
+        <input id="name" name="name" placeholder="이름 입력" required />
+
+        <label for="preference">매칭 방식</label>
+        <select id="preference" name="preference">
+          <option value="auto">자동 배정(권장)</option>
+          <option value="student">학생-학생</option>
+          <option value="ai">학생-AI</option>
+        </select>
+
+        <button type="submit">입장하기</button>
+      </form>
+    {% else %}
+      <div class="card">
+        <strong>현재 라운드가 닫혀 있습니다.</strong>
+      </div>
+    {% endif %}
+
+    <p><a href="/teacher">교사용 대시보드</a></p>
+  </main>
+</body>
+</html>

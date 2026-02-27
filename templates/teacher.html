@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>교사용 대시보드</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <main class="container">
+    <h1>교사용 진행 화면</h1>
+
+    <section class="card">
+      <h3>라운드 제어</h3>
+      <div class="row">
+        <form method="post" action="/teacher/round/open"><button>라운드 열기</button></form>
+        <form method="post" action="/teacher/round/close"><button>라운드 닫기</button></form>
+        <form method="post" action="/teacher/round/reset" onsubmit="return confirm('모든 기록을 초기화할까요?')"><button>기록 초기화</button></form>
+      </div>
+      <p>상태: <strong>{{ '진행 중' if round_open else '종료' }}</strong></p>
+      <p>
+        참여 {{ stats.participants }}명 / 대기 {{ stats.waiting }}명 / 방 {{ stats.rooms }}개
+        (학생-학생 {{ stats.student_rooms }}, 학생-AI {{ stats.ai_rooms }})
+      </p>
+      <p>판정 제출 {{ stats.judgments }} / 정답 {{ stats.correct }}</p>
+    </section>
+
+    <section class="card">
+      <h3>매칭 대기 학생</h3>
+      {% if waiting_students %}
+        <ul>
+          {% for s in waiting_students %}
+            <li>{{ s.name }} (선호: {{ s.preference }})</li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p>대기 인원 없음</p>
+      {% endif %}
+    </section>
+
+    <section class="card">
+      <h3>진행 중 방</h3>
+      {% for room, names in room_rows %}
+        <article class="room">
+          <h4>{{ room.room_id }} / {{ '학생-학생' if room.match_type == 'student' else '학생-AI' }}</h4>
+          <p>참여자: {{ names | join(', ') }}</p>
+          <p>
+            {% for pid, j in room.judgments.items() %}
+              판정: {{ j.guess }} ({{ j.reason or '근거 없음' }}) /
+            {% else %}
+              판정 없음
+            {% endfor %}
+          </p>
+          <div class="chat">
+            {% for m in room.messages %}
+              <div class="msg"><strong>{{ m.sender_id }}:</strong> {{ m.text }}</div>
+            {% endfor %}
+          </div>
+        </article>
+      {% else %}
+        <p>아직 생성된 방이 없습니다.</p>
+      {% endfor %}
+    </section>
+  </main>
+</body>
+</html>
