@@ -20,7 +20,8 @@
 python -m venv .venv
 source .venv/bin/activate   # Windows: .venv\\Scripts\\activate
 pip install -r requirements.txt
-export OPENAI_API_KEY="sk-..."   # 선택 (없으면 데모 응답)
+cp .env.example .env
+# .env 파일에 OPENAI_API_KEY 입력 (앱이 자동 로드)
 python app.py
 ```
 
@@ -35,3 +36,8 @@ python app.py
 - `AI_MIN_DELAY`: AI 최소 지연(초)
 - `AI_MAX_DELAY`: AI 최대 지연(초)
 - `FLASK_SECRET_KEY`: 세션 보안 키
+
+
+## 주의
+
+- `.env.example`은 예시 파일입니다. 실제 실행 시에는 `.env` 파일로 복사해 사용해야 합니다.

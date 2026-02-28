@@ -14,6 +14,22 @@ except Exception:
     OpenAI = None
 
 
+def _load_local_env() -> None:
+    env_path = os.path.join(os.getcwd(), ".env")
+    if not os.path.exists(env_path):
+        return
+
+    with open(env_path, "r", encoding="utf-8") as f:
+        for raw_line in f:
+            line = raw_line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            key = key.strip()
+            value = value.strip().strip('"').strip("'")
+            os.environ.setdefault(key, value)
+
+
 @dataclass
 class Message:
     sender_id: str
@@ -63,6 +79,8 @@ class GameState:
             self.room_by_participant = {}
             self.waiting_student_ids = []
 
+
+_load_local_env()
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "dev-secret-change-me")
