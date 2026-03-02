@@ -3,44 +3,61 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>교사용 대시보드</title>
+  <title>교사 대시보드</title>
   <link rel="stylesheet" href="/static/style.css" />
 </head>
 <body>
   <main class="container">
-    <h1>교사용 진행 화면</h1>
+    <h1>교사 진행 화면</h1>
 
     <section class="card">
-      <h3>라운드 제어</h3>
+      <h3>세션 제어</h3>
       <div class="row">
-        <form method="post" action="/teacher/round/open"><button>라운드 열기</button></form>
-        <form method="post" action="/teacher/round/close"><button>라운드 닫기</button></form>
+        <form method="post" action="/teacher/round/open"><button>접속 열기</button></form>
+        <form method="post" action="/teacher/round/close"><button>접속 닫기</button></form>
+        <form method="post" action="/teacher/match"><button>매칭 시작</button></form>
         <form method="post" action="/teacher/round/reset" onsubmit="return confirm('모든 기록을 초기화할까요?')"><button>기록 초기화</button></form>
       </div>
-      <p>상태: <strong>{{ '진행 중' if round_open else '종료' }}</strong></p>
-      <p>총 {{ stats.total }}명 / 사람방 {{ stats.human_rooms }} / AI방 {{ stats.ai_rooms }} / 판정 제출 {{ stats.judged }} / 정답 {{ stats.correct }}</p>
+      <p>
+        접속 허용: <strong>{{ 'ON' if accepting_joins else 'OFF' }}</strong>
+        / 매칭 시작됨: <strong>{{ 'YES' if matching_started else 'NO' }}</strong>
+      </p>
+      <p>
+        총 학생 {{ stats.participants }} / 대기 {{ stats.waiting }} / 방 {{ stats.rooms }}
+        (학생-학생 {{ stats.human_rooms }}, 학생-AI {{ stats.ai_rooms }})
+        / 판정 {{ stats.judged }} / 정답 {{ stats.correct }}
+      </p>
+      <p>대기 학생: {{ waiting_students|join(', ') if waiting_students else '-' }}</p>
     </section>
 
     <section class="card">
-      <h3>학생 세션 목록</h3>
+      <h3>AI 페르소나</h3>
+      <form method="post" action="/teacher/persona">
+        <textarea name="persona" rows="6" style="width:100%;">{{ ai_persona }}</textarea>
+        <div class="row" style="margin-top: 0.5rem;">
+          <button type="submit">페르소나 저장</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="card">
+      <h3>방 목록</h3>
       {% for room in rooms %}
         <article class="room">
-          <h4>{{ room.student_name }} ({{ room.room_id }}) - 실제 정체: {{ room.mode }}</h4>
-          <p>학생 판정: {{ room.judgment or '-' }} / 근거: {{ room.judgment_reason or '-' }}</p>
-          <div class="chat">
-            {% for m in room.messages %}
-              <div class="msg {{ m.role }}"><strong>{{ '학생' if m.role == 'student' else '상대' }}:</strong> {{ m.text }}</div>
+          <h4>{{ room.student_names }} ({{ room.room_id }}) - 실제 정체: {{ room.mode }}</h4>
+          <div>
+            {% for j in room.judgments %}
+              <p>{{ j.student_name }}의 판정: {{ j.guess }} / 근거: {{ j.reason }}</p>
             {% endfor %}
           </div>
-          {% if room.mode == 'human' %}
-            <form method="post" action="/teacher/room/{{ room.room_id }}/reply" class="row">
-              <input name="text" placeholder="사람 역할 답변 입력" required />
-              <button>전송</button>
-            </form>
-          {% endif %}
+          <div class="chat">
+            {% for m in room.messages %}
+              <div class="msg opponent"><strong>{{ m.sender_name }}:</strong> {{ m.text }}</div>
+            {% endfor %}
+          </div>
         </article>
       {% else %}
-        <p>아직 접속한 학생이 없습니다.</p>
+        <p>아직 생성된 방이 없습니다.</p>
       {% endfor %}
     </section>
   </main>

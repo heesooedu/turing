@@ -9,22 +9,20 @@
 <body>
   <main class="container">
     <h1>튜링 테스트 게임</h1>
-    <p>대화 후 상대가 사람인지 AI인지 판정해보세요.</p>
+    <p>학생은 먼저 접속 후 대기합니다. 교사가 매칭을 시작하면 채팅이 열립니다.</p>
 
-    {% if round_open %}
+    {% if accepting_joins %}
       <form action="/join" method="post" class="card">
         <label for="name">이름</label>
         <input id="name" name="name" placeholder="이름 입력" required />
-        <button type="submit">게임 시작</button>
+        <button type="submit">접속하기</button>
       </form>
     {% else %}
       <div class="card">
-        <strong>현재 라운드가 닫혀 있습니다.</strong>
-        <p>교사가 라운드를 열면 다시 접속해 주세요.</p>
+        <strong>현재 접속 대기 상태가 닫혀 있습니다.</strong>
+        <p>교사가 다시 열어야 학생이 접속할 수 있습니다.</p>
       </div>
     {% endif %}
-
-    <p><a href="/teacher">교사용 대시보드</a></p>
   </main>
 </body>
 </html>

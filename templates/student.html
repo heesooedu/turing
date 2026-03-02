@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
@@ -8,14 +8,15 @@
 </head>
 <body>
   <main class="container">
-    <h1>학생 채팅방</h1>
-    <p>상대는 익명입니다. 대화 후 판정을 제출하세요.</p>
+    <h1>학생 채팅</h1>
+    <p><strong>{{ student_name }}</strong> 님으로 접속됨</p>
+    <p id="waitBanner" class="hint"></p>
 
     <section id="messages" class="chat card"></section>
 
     <div class="card row">
       <input id="msg" placeholder="메시지를 입력하세요" />
-      <button onclick="sendMessage()">전송</button>
+      <button id="sendBtn" onclick="sendMessage()">전송</button>
     </div>
 
     <section class="card">
@@ -25,7 +26,7 @@
           <option value="ai">AI 같다</option>
           <option value="human">사람 같다</option>
         </select>
-        <input id="reason" placeholder="근거(1~2문장)" />
+        <input id="reason" placeholder="근거 (1~2문장)" />
         <button onclick="submitJudgment()">제출</button>
       </div>
       <p id="status"></p>
@@ -34,6 +35,14 @@
 
   <script>
     const box = document.getElementById('messages');
+    const input = document.getElementById('msg');
+    const sendBtn = document.getElementById('sendBtn');
+    const waitBanner = document.getElementById('waitBanner');
+    const statusEl = document.getElementById('status');
+
+    let isSending = false;
+    let currentWaiting = true;
+    let canSend = false;
 
     function escapeHtml(text) {
       const div = document.createElement('div');
@@ -41,29 +50,70 @@
       return div.innerHTML;
     }
 
+    function applySendState() {
+      const disabled = currentWaiting || !canSend || isSending;
+      input.disabled = disabled;
+      sendBtn.disabled = disabled;
+    }
+
+    function setWaiting(waiting, matchingStarted, awaitingReply) {
+      currentWaiting = waiting;
+      if (waiting) {
+        waitBanner.innerText = matchingStarted
+          ? '매칭이 진행 중입니다. 잠시 기다려 주세요.'
+          : '현재 대기 중입니다. 교사가 매칭을 시작하면 채팅이 열립니다.';
+      } else if (awaitingReply) {
+        waitBanner.innerText = '상대 답장을 기다리는 중입니다.';
+      } else {
+        waitBanner.innerText = '';
+      }
+      applySendState();
+    }
+
     async function refresh() {
       const res = await fetch('/api/messages');
       const data = await res.json();
+
+      if (!res.ok) {
+        statusEl.innerText = data.error || '메시지 로딩 실패';
+        return;
+      }
+
+      canSend = !!data.can_send;
+      setWaiting(!!data.waiting, !!data.matching_started, !!data.awaiting_reply);
+
       box.innerHTML = data.messages.map(m =>
         `<div class="msg ${m.role}"><strong>${m.role === 'student' ? '나' : '상대'}:</strong> ${escapeHtml(m.text)}</div>`
       ).join('');
       box.scrollTop = box.scrollHeight;
-      if (!data.round_open) {
-        document.getElementById('status').innerText = '라운드가 종료되었습니다. 판정을 제출하세요.';
-      }
     }
 
     async function sendMessage() {
-      const input = document.getElementById('msg');
       const text = input.value.trim();
-      if (!text) return;
-      await fetch('/api/send', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({text}),
-      });
-      input.value = '';
-      await refresh();
+      if (!text || sendBtn.disabled) return;
+
+      isSending = true;
+      applySendState();
+
+      try {
+        const res = await fetch('/api/send', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({text}),
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          statusEl.innerText = data.error || '전송 실패';
+          return;
+        }
+
+        input.value = '';
+        await refresh();
+      } finally {
+        isSending = false;
+        applySendState();
+      }
     }
 
     async function submitJudgment() {
@@ -74,9 +124,13 @@
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({guess, reason}),
       });
-      document.getElementById('status').innerText = res.ok ? '판정이 제출되었습니다.' : '제출에 실패했습니다.';
+      const data = await res.json();
+      statusEl.innerText = res.ok
+        ? '판정을 제출했습니다.'
+        : (data.error || '제출에 실패했습니다.');
     }
 
+    applySendState();
     refresh();
     setInterval(refresh, 2000);
   </script>
