@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>교사 대시보드</title>
+  <title>교사 진행 화면</title>
   <link rel="stylesheet" href="/static/style.css" />
 </head>
 <body>
@@ -31,9 +31,20 @@
     </section>
 
     <section class="card">
-      <h3>AI 페르소나</h3>
+      <h3>AI 페르소나 (최대 4개 저장)</h3>
       <form method="post" action="/teacher/persona">
-        <textarea name="persona" rows="6" style="width:100%;">{{ ai_persona }}</textarea>
+        <label for="persona_1"><strong>페르소나 1</strong></label>
+        <textarea id="persona_1" name="persona_1" rows="4" style="width:100%;">{{ ai_personas[0] }}</textarea>
+
+        <label for="persona_2"><strong>페르소나 2</strong></label>
+        <textarea id="persona_2" name="persona_2" rows="4" style="width:100%;">{{ ai_personas[1] }}</textarea>
+
+        <label for="persona_3"><strong>페르소나 3</strong></label>
+        <textarea id="persona_3" name="persona_3" rows="4" style="width:100%;">{{ ai_personas[2] }}</textarea>
+
+        <label for="persona_4"><strong>페르소나 4</strong></label>
+        <textarea id="persona_4" name="persona_4" rows="4" style="width:100%;">{{ ai_personas[3] }}</textarea>
+
         <div class="row" style="margin-top: 0.5rem;">
           <button type="submit">페르소나 저장</button>
         </div>
@@ -45,6 +56,9 @@
       {% for room in rooms %}
         <article class="room">
           <h4>{{ room.student_names }} ({{ room.room_id }}) - 실제 정체: {{ room.mode }}</h4>
+          {% if room.mode == 'ai' %}
+            <p><strong>선택된 AI 페르소나:</strong> {{ room.ai_persona if room.ai_persona else '-' }}</p>
+          {% endif %}
           <div>
             {% for j in room.judgments %}
               <p>{{ j.student_name }}의 판정: {{ j.guess }} / 근거: {{ j.reason }}</p>

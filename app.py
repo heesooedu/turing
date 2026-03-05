@@ -44,6 +44,7 @@ class Room:
     awaiting_ai: bool = False
     judgments: Dict[str, str] = field(default_factory=dict)
     judgment_reasons: Dict[str, str] = field(default_factory=dict)
+    ai_persona: str = ""
 
 
 class GameState:
@@ -51,11 +52,12 @@ class GameState:
         self.lock = threading.Lock()
         self.accepting_joins = True
         self.matching_started = False
-        self.ai_persona = (
+        self.default_ai_persona = (
             "You are a middle school student in a Turing-test style chat game. "
             "Sound natural and varied. Mix short and medium answers. "
             "Do not reveal you are an AI unless directly asked."
         )
+        self.ai_personas = [self.default_ai_persona, "", "", ""]
         self.participants: Dict[str, Participant] = {}
         self.rooms: Dict[str, Room] = {}
 
@@ -127,6 +129,13 @@ def _post_ai_reply_after_delay(
         room.awaiting_ai = False
 
 
+def _pick_ai_persona_unlocked() -> str:
+    candidates = [p.strip() for p in state.ai_personas if p and p.strip()]
+    if not candidates:
+        return state.default_ai_persona
+    return random.choice(candidates)
+
+
 def _run_matching_unlocked() -> int:
     unmatched = [p.participant_id for p in state.participants.values() if not p.room_id]
     random.shuffle(unmatched)
@@ -164,6 +173,7 @@ def _run_matching_unlocked() -> int:
             mode="ai",
             participant_ids=[a_id],
             created_at=time.time(),
+            ai_persona=_pick_ai_persona_unlocked(),
         )
         state.rooms[room_id] = room
         state.participants[a_id].room_id = room_id
@@ -308,7 +318,7 @@ def send_message():
         live_room.messages.append(Message(sender_id=my_id, text=text, ts=time.time()))
         mode = live_room.mode
         history_copy = list(live_room.messages)
-        persona = state.ai_persona
+        persona = live_room.ai_persona or state.default_ai_persona
         if mode == "ai":
             live_room.awaiting_ai = True
 
@@ -397,6 +407,7 @@ def teacher_dashboard():
                     "room_id": r.room_id,
                     "mode": r.mode,
                     "student_names": ", ".join(names),
+                    "ai_persona": r.ai_persona,
                     "messages": messages,
                     "judgments": judgments,
                 }
@@ -418,7 +429,7 @@ def teacher_dashboard():
             "accepting_joins": state.accepting_joins,
             "matching_started": state.matching_started,
             "waiting_students": waiting_students,
-            "ai_persona": state.ai_persona,
+            "ai_personas": state.ai_personas,
         }
 
     return render_template("teacher.html", **context)
@@ -454,10 +465,13 @@ def match_students():
 
 @app.post("/teacher/persona")
 def set_persona():
-    text = request.form.get("persona", "").strip()
+    texts = [request.form.get(f"persona_{i}", "").strip() for i in range(1, 5)]
+    legacy_text = request.form.get("persona", "").strip()
+    if legacy_text and not any(texts):
+        texts[0] = legacy_text
+
     with state.lock:
-        if text:
-            state.ai_persona = text
+        state.ai_personas = texts
     return redirect(url_for("teacher_dashboard"))
 
 
@@ -480,6 +494,7 @@ def teacher_rooms_api():
                 {
                     "room_id": r.room_id,
                     "mode": r.mode,
+                    "ai_persona": r.ai_persona,
                     "students": names,
                     "messages": messages,
                     "judgments": r.judgments,
